@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider     = "mysql"
+  url          = env("DATABASE_URL")
+  relationMode = "prisma"
+}
+
+model Item {
+  itemId         String @id // "aabeb527c4e5d3b2cf2fba8a9cb8bbe7",
+  itemName       String // "힘의 정수 1개 상자",
+  itemRarity     String // "레전더리",
+  itemType       String // "스태커블",
+  itemTypeDetail String // "부스터",
+}
