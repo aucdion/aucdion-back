@@ -1,6 +1,7 @@
 import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
 import { ItemsService } from './items.service';
 import { Item } from './dto/item.output';
+import { SearchInput } from './dto/search.dto';
 @Resolver(() => Item)
 export class ItemsResolver {
   constructor(private readonly itemsService: ItemsService) {}
@@ -11,7 +12,9 @@ export class ItemsResolver {
   }
 
   @Query(() => [Item], { name: 'search' })
-  findAllByKeyword(@Args('keyword', { type: () => String }) keyword: string) {
-    return this.itemsService.findAllByKeyword(keyword);
+  findAllByKeyword(
+    @Args('searchInput', { type: () => SearchInput }) searchInput: SearchInput,
+  ) {
+    return this.itemsService.findAllByKeyword(searchInput);
   }
 }

@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import mockItems from 'src/items/mock/item';
-// import got from 'got';
+import { axiosInstance } from 'src/utils/axios';
+import { SearchInput } from './dto/search.dto';
+
 @Injectable()
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
@@ -14,19 +15,18 @@ export class ItemsService {
     });
   }
 
-  findAllByKeyword(keyword: string) {
-    // console.log(mockItems);
+  async findAllByKeyword(searchInput: SearchInput) {
+    try {
+      const { data } = await axiosInstance.get('/items', {
+        params: {
+          ...searchInput,
+          wordType: 'full',
+        },
+      });
 
-    // const { data } = await got
-    //   .post('https://httpbin.org/anything', {
-    //     json: {
-    //       hello: 'world',
-    //     },
-    //   })
-    //   .json();
-
-    // console.log(data);
-    // neople API call
-    return mockItems;
+      return data.rows;
+    } catch (error) {
+      console.log(error.response); // TODO: 에러처리
+    }
   }
 }
