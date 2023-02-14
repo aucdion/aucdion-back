@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma.service';
-import mockItems from 'src/items/mock/item';
-// import got from 'got';
+import { axiosInstance } from 'src/utils/axios';
+import { Item } from './dto/item.output';
+import { SearchInput } from './dto/search.dto';
+
 @Injectable()
 export class ItemsService {
   constructor(private prisma: PrismaService) {}
@@ -14,19 +16,44 @@ export class ItemsService {
     });
   }
 
-  findAllByKeyword(keyword: string) {
-    // console.log(mockItems);
+  async findAllByKeyword(searchInput: SearchInput) {
+    try {
+      const { data } = await axiosInstance.get<{ rows: Item[] }>('/items', {
+        params: {
+          ...searchInput,
+          limit: 30,
+          wordType: 'full',
+        },
+      });
 
-    // const { data } = await got
-    //   .post('https://httpbin.org/anything', {
-    //     json: {
-    //       hello: 'world',
-    //     },
-    //   })
-    //   .json();
+      const promises = data.rows.map(async (item) => {
+        const dbItem = await this.prisma.item.findUnique({
+          where: { itemId: item.itemId },
+        });
+        if (!!dbItem) return;
+        const { data } = await axiosInstance.get<{ rows: Array<unknown> }>(
+          '/auction-sold',
+          {
+            params: {
+              itemId: item.itemId,
+            },
+          },
+        );
 
-    // console.log(data);
-    // neople API call
-    return mockItems;
+        if (data.rows.length === 0)
+          throw new NotFoundException('item not found in auction');
+
+        this.prisma.item.create({
+          data: item,
+        });
+        return item;
+      });
+
+      return (await Promise.allSettled(promises))
+        .filter(({ status }) => status === 'fulfilled')
+        .map(({ value }: PromiseFulfilledResult<Item>) => value);
+    } catch (error) {
+      console.log(error.response); // TODO: 에러처리
+    }
   }
 }
